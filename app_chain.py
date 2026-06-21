@@ -57,7 +57,7 @@ agent = create_agent(
     model=llm, 
     tools=tools, 
     system_prompt=system_prompt,
-    debug=True
+    debug=False
 )
 
 
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     user_query = f"Check the folder '{test_folder}', read the PDFs inside, and give me their specs."
     
     print("Starting Fully Autonomous Agent...")
-    response = agent.invoke({"input": user_query})
+    response = agent.invoke({"messages": [{"role": "user", "content": f"{user_query}"}]})
     
     print("\n================ FINAL REPORT ================")
-    print(response)
+    print(response["messages"][-1].content)
