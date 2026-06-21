@@ -67,9 +67,12 @@ def extract_data_from_pdf(file_path: str) -> str:
         prompt = f"From the following component text snippet, extract the component value and tolerance:\n\n{cleaned_text}"
         #print(prompt)
         
+        llm = base_llm.with_structured_output(CapacitorSpecs, method="json_schema")
+        
         # The result will be a pure Pydantic object matching our CapacitorSpecs schema!
-        result: CapacitorSpecs = structured_llm.invoke(prompt)
-        #print(result)
+        #result: CapacitorSpecs = structured_llm.invoke(prompt)
+        result: CapacitorSpecs = llm.invoke(prompt)
+        print(result)
         
         # Return a nice, clean one-line string back to your main workflow loop
         return f"[{os.path.basename(file_path)}] Value: {result.component_value} | Tolerance: {result.tolerance}"
@@ -88,18 +91,10 @@ tool_map = {
 # 2. INITIALIZE OLLAMA QWEN MODEL WITH TOOLS
 # ==========================================
 
-# Using low temperature to make the 0.8B model stick strictly to the facts
-#llm = ChatOllama(model="qwen3.5:0.8b", temperature=0.0, keep_alive=0).bind_tools(
-llm = ChatOllama(model="llama3.1:8b", temperature=0.0, keep_alive=0).bind_tools(
-    [list_pdfs_in_directory, extract_data_from_pdf]
-)
+llm_model = "llama3.1:8b"
 
-# Create a dedicated structured model instance for extraction
-#structured_llm = ChatOllama(model="qwen3.5:0.8b", temperature=0.0, keep_alive=0).with_structured_output(
-structured_llm = ChatOllama(model="llama3.1:8b", temperature=0.0, keep_alive=0).with_structured_output(
-    CapacitorSpecs, 
-    method="json_schema"
-)
+# Using low temperature to make the 0.8B model stick strictly to the facts
+base_llm = ChatOllama(model = llm_model, temperature = 0.0) 
 
 # ==========================================
 # 3. MANUAL AGENT LOOP (Guarantees execution for 0.8B)
@@ -113,8 +108,11 @@ def run_pdf_workflow(user_prompt: str):
         HumanMessage(content=f"You are a helpful assistant. Please use the tools to fulfill this request: {user_prompt}")
     ]
     
+    llm = base_llm.bind_tools([list_pdfs_in_directory, extract_data_from_pdf])
+    
     print("🤖 Agent deciding first action...")
     ai_msg = llm.invoke(messages)
+    print(ai_msg)
     
     if ai_msg.tool_calls:
         for tool_call in ai_msg.tool_calls:
@@ -145,7 +143,7 @@ def run_pdf_workflow(user_prompt: str):
 # ==========================================
 if __name__ == "__main__":
     # Change this to whatever test folder path you actually have locally
-    test_folder = "./pdf" 
+    test_folder = "C:/Users/User/Desktop/RandomTesting/pdf" 
     
     # Create sample dummy folder for testing if it doesn't exist
     if not os.path.exists(test_folder):
