@@ -40,7 +40,7 @@ def extract_data_from_pdf(file_path: str) -> str:
 
 # Initialize the base model once
 llm_model = "qwen3.5:0.8b"
-llm = ChatOllama(model=llm_model, temperature=0.0)
+llm = ChatOllama(model=llm_model, temperature=0.0, reasoning = True)
 
 # Define the tools array
 tools = [list_pdfs_in_directory, extract_data_from_pdf]
@@ -73,6 +73,7 @@ if __name__ == "__main__":
     
     print("Starting Fully Autonomous Agent...")
     response = agent.invoke({"messages": [{"role": "user", "content": f"{user_query}"}]})
+    print(response["messages"][-1].additional_kwargs["reasoning_content"])
     
     print("\n================ FINAL REPORT ================")
     print(response["messages"][-1].content)
